@@ -41,12 +41,11 @@ if 'scaler' not in st.session_state:
     st.session_state['scaler'] = None
 
 # -------------------------------------------------------------
-# 🌟 오류 해결을 위한 핵심 수정: 슬라이더 초기값을 여기서 설정!
+# 🌟 오류 해결을 위한 핵심 수정: 슬라이더 초기값을 여기서 무조건 float으로 설정!
 # -------------------------------------------------------------
 for var, default_val in DEFAULT_INPUT_VALS.items():
-    # 'input_T_Melt' 등의 키가 세션에 없으면 기본값을 할당합니다.
+    # 'input_T_Melt' 등의 키가 세션에 없으면 기본값을 할당하고, float으로 명시적 변환
     if f'input_{var}' not in st.session_state:
-        # 슬라이더가 요구하는 float/int 타입으로 명시적으로 변환하여 저장
         st.session_state[f'input_{var}'] = float(default_val)
 # -------------------------------------------------------------
 
@@ -204,8 +203,11 @@ with st.sidebar:
                 init_row = st.session_state['df_init'].iloc[0]
                 for var in PROCESS_VARS:
                     if var in init_row:
-                        # 슬라이더 상태 업데이트를 위해 세션 상태에 저장 (float으로 변환)
-                        st.session_state[f'input_{var}'] = float(init_row[var])
+                        try:
+                            # 값을 float으로 변환하여 안전하게 저장 (데이터 타입 오류 방지)
+                            st.session_state[f'input_{var}'] = float(init_row[var])
+                        except ValueError:
+                            st.warning(f"⚠️ 초기 조건 파일의 '{var}' 값이 유효한 숫자가 아닙니다. 기본값을 유지합니다.")
 
 
     st.button("🚀 파일 로드 및 AI 모델 학습 시작", on_click=load_and_train_model)
@@ -245,22 +247,65 @@ with tab1:
     col_mold, col_meter, col_vp = st.columns(3)
 
     # -------------------------------------------------------------
-    # 슬라이더 UI 생성 (세션 상태의 초기값이 이미 할당되어 있어 오류 방지)
+    # 🌟 슬라이더 UI 생성 (value= 명시적 사용으로 오류 해결)
     # -------------------------------------------------------------
     input_vars = {}
+    
+    # 모든 슬라이더에서 value= 인수를 명시적으로 사용합니다. (오류 방지 핵심)
     with col_melt:
-        # 기본값으로 session_state 사용
-        input_vars['T_Melt'] = st.slider('용융 온도 (T_Melt)', 200, 300, st.session_state['input_T_Melt'], 5, key='slider_T_Melt')
+        input_vars['T_Melt'] = st.slider(
+            '용융 온도 (T_Melt)', 
+            200, 
+            300, 
+            value=st.session_state['input_T_Melt'], # value= 명시
+            step=5, 
+            key='slider_T_Melt'
+        )
     with col_inj:
-        input_vars['V_Inj'] = st.slider('사출 속도 (V_Inj)', 1, 10, st.session_state['input_V_Inj'], 1, key='slider_V_Inj')
+        input_vars['V_Inj'] = st.slider(
+            '사출 속도 (V_Inj)', 
+            1, 
+            10, 
+            value=st.session_state['input_V_Inj'], # value= 명시
+            step=1, 
+            key='slider_V_Inj'
+        )
     with col_pack:
-        input_vars['P_Pack'] = st.slider('보압 (P_Pack)', 50, 100, st.session_state['input_P_Pack'], 5, key='slider_P_Pack')
+        input_vars['P_Pack'] = st.slider(
+            '보압 (P_Pack)', 
+            50, 
+            100, 
+            value=st.session_state['input_P_Pack'], # value= 명시
+            step=5, 
+            key='slider_P_Pack'
+        )
     with col_mold:
-        input_vars['T_Mold'] = st.slider('금형 온도 (T_Mold)', 30, 80, st.session_state['input_T_Mold'], 5, key='slider_T_Mold')
+        input_vars['T_Mold'] = st.slider(
+            '금형 온도 (T_Mold)', 
+            30, 
+            80, 
+            value=st.session_state['input_T_Mold'], # value= 명시
+            step=5, 
+            key='slider_T_Mold'
+        )
     with col_meter:
-        input_vars['Meter'] = st.slider('계량 위치 (Meter)', 180, 200, st.session_state['input_Meter'], 1, key='slider_Meter')
+        input_vars['Meter'] = st.slider(
+            '계량 위치 (Meter)', 
+            180, 
+            200, 
+            value=st.session_state['input_Meter'], # value= 명시
+            step=1, 
+            key='slider_Meter'
+        )
     with col_vp:
-        input_vars['VP_Switch_Pos'] = st.slider('VP 전환 위치', 10, 20, st.session_state['input_VP_Switch_Pos'], 1, key='slider_VP_Switch_Pos')
+        input_vars['VP_Switch_Pos'] = st.slider(
+            'VP 전환 위치', 
+            10, 
+            20, 
+            value=st.session_state['input_VP_Switch_Pos'], # value= 명시
+            step=1, 
+            key='slider_VP_Switch_Pos'
+        )
 
     st.markdown("---")
     st.header("B. 전문가의 정성적 및 정량적 노하우 입력")
