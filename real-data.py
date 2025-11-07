@@ -96,7 +96,8 @@ def load_df_from_uploader(uploaded_file):
     return None
 
 def process_weld_data(df_virtual, df_real):
-    """실제 데이터와 가상 데이터를 결합하고 전처리합니다."""
+    # 에러가 발생하는 독스트링을 주석으로 대체하여 오류를 방지합니다. (Line 99)
+    # 실제 데이터와 가상 데이터를 결합하고 전처리합니다.
     
     valid_dataframes = [df for df in [df_real, df_virtual] if df is not None and not df.empty]
     
@@ -539,4 +540,4 @@ sanitized_code_content = code_content.replace('\xa0', ' ')
 with open(file_path, "w", encoding="utf-8") as f:
     f.write(sanitized_code_content)
 
-print(f"File '{file_path}' has been definitively saved after removing the problematic docstring structure and ensuring clean indentation.")
+print(f"File '{file_path}' has been definitively saved after removing all known problematic docstring structures and ensuring clean indentation.")
