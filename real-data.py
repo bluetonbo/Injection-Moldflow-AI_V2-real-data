@@ -1,5 +1,7 @@
-# 원본 코드 로드
-file_path = "app.py" # 임시 파일 이름
+# 파일 경로 정의 (Streamlit 실행 파일)
+file_path = "app.py" 
+
+# 전체 코드를 표준 4칸 공백 들여쓰기로 정리하여 저장
 code = """
 import streamlit as st
 import pandas as pd
@@ -68,7 +70,7 @@ for var, default_val in DEFAULT_INPUT_VALS.items():
 
 
 # =================================================================
-# 1. 데이터 로드 및 전처리 함수 (생략 - 변경 없음)
+# 1. 데이터 로드 및 전처리 함수 
 # =================================================================
 
 @st.cache_data(show_spinner=False)
@@ -117,7 +119,7 @@ def process_weld_data(df_virtual, df_real):
     return df_processed
 
 # =================================================================
-# 2. 모델 학습 함수 (생략 - 변경 없음)
+# 2. 모델 학습 함수 
 # =================================================================
 
 def train_model(df):
@@ -138,7 +140,7 @@ def train_model(df):
     return model, scaler
 
 # =================================================================
-# 3. 예측 및 최적화 함수 (생략 - 변경 없음)
+# 3. 예측 및 최적화 함수 
 # =================================================================
 
 def predict_weld_risk(model, scaler, input_data):
@@ -343,7 +345,7 @@ with tab1:
     # -----------------
     st.header("C. 진단 실행 및 최적 조건 제시")
     
-    # 변경 1: 현재 입력값을 세션 상태에 저장 (on_click 콜백에서 사용하기 위함)
+    # 현재 입력값을 세션 상태에 저장 
     st.session_state['current_input_vars'] = input_vars
     
     if st.session_state['model'] is not None:
@@ -351,7 +353,6 @@ with tab1:
         
         def run_diagnosis():
             """진단 버튼 클릭 시 실행"""
-            # 변경 3: 현재 입력값으로 위험도 계산 및 세션 상태 저장
             model = st.session_state['model']
             scaler = st.session_state['scaler']
             input_data = st.session_state['current_input_vars']
@@ -360,14 +361,12 @@ with tab1:
             
             st.session_state['diagnosis_executed'] = True
             st.session_state['last_risk'] = risk
-            
-            # 변경 4: run_diagnosis 내부의 중복된 메시지 제거 (아래의 조건부 표시 블록에서 처리)
                 
         def run_optimization():
             """최적 공정 조건 제시 버튼 클릭 시 실행 (노하우 계수 반영)"""
             model = st.session_state['model']
             scaler = st.session_state['scaler']
-            current_inputs = st.session_state['current_input_vars'] # 변경 5: 저장된 입력값 사용
+            current_inputs = st.session_state['current_input_vars']
             
             # C와 K 값 가져오기
             C = st.session_state['expert_confidence_slider']
@@ -381,7 +380,7 @@ with tab1:
                 X_df = pd.DataFrame([X_array], columns=PROCESS_VARS)
                 return predict_weld_risk(model, scaler, X_df.iloc[0].to_dict())
 
-            X0 = np.array([current_inputs[var] for var in PROCESS_VARS]) # 변경 5: 저장된 입력값 사용
+            X0 = np.array([current_inputs[var] for var in PROCESS_VARS])
 
             # 변수별 물리적 최대/최소 범위 (초기 설정)
             v_min, v_max = SLIDER_BOUNDS['V_Inj'][0], SLIDER_BOUNDS['V_Inj'][1]
@@ -393,18 +392,15 @@ with tab1:
             if v_inj_apply:
                 # 노하우 적용 시에만 경계 조정
                 if v_inj_intent == 'Increase':
-                    # 방향성 노하우: 최소 변화량 = Delta * C (Confidence)
                     v_min_req_change = v_inj_delta * C
-                    v_min = max(v_min, current_inputs['V_Inj'] + v_min_req_change) # 변경 5: 저장된 입력값 사용
+                    v_min = max(v_min, current_inputs['V_Inj'] + v_min_req_change)
                 elif v_inj_intent == 'Decrease':
-                    # 방향성 노하우: 최소 변화량 = Delta * C (Confidence)
                     v_min_req_change = v_inj_delta * C
-                    v_max = min(v_max, current_inputs['V_Inj'] - v_min_req_change) # 변경 5: 저장된 입력값 사용
+                    v_max = min(v_max, current_inputs['V_Inj'] - v_min_req_change)
                 elif v_inj_intent == 'Keep_Constant':
-                    # 유지 노하우: 최대 허용 폭 = Delta * K (Knowhow Factor)
                     v_max_allow_change = v_inj_delta * K
-                    v_min = max(v_min, current_inputs['V_Inj'] - v_max_allow_change) # 변경 5: 저장된 입력값 사용
-                    v_max = min(v_max, current_inputs['V_Inj'] + v_max_allow_change) # 변경 5: 저장된 입력값 사용
+                    v_min = max(v_min, current_inputs['V_Inj'] - v_max_allow_change)
+                    v_max = min(v_max, current_inputs['V_Inj'] + v_max_allow_change)
             
             # -------------------------------------------------------------
             # 🌟 T_Mold 노하우 적용 로직
@@ -412,18 +408,15 @@ with tab1:
             if t_mold_apply:
                 # 노하우 적용 시에만 경계 조정
                 if t_mold_intent == 'Increase':
-                    # 방향성 노하우: 최소 변화량 = Delta * C (Confidence)
                     t_min_req_change = t_mold_delta * C
-                    t_min = max(t_min, current_inputs['T_Mold'] + t_min_req_change) # 변경 5: 저장된 입력값 사용
+                    t_min = max(t_min, current_inputs['T_Mold'] + t_min_req_change)
                 elif t_mold_intent == 'Decrease':
-                    # 방향성 노하우: 최소 변화량 = Delta * C (Confidence)
                     t_min_req_change = t_mold_delta * C
-                    t_max = min(t_max, current_inputs['T_Mold'] - t_min_req_change) # 변경 5: 저장된 입력값 사용
+                    t_max = min(t_max, current_inputs['T_Mold'] - t_min_req_change)
                 elif t_mold_intent == 'Keep_Constant':
-                    # 유지 노하우: 최대 허용 폭 = Delta * K (Knowhow Factor)
                     t_max_allow_change = t_mold_delta * K
-                    t_min = max(t_min, current_inputs['T_Mold'] - t_max_allow_change) # 변경 5: 저장된 입력값 사용
-                    t_max = min(t_max, current_inputs['T_Mold'] + t_max_allow_change) # 변경 5: 저장된 입력값 사용
+                    t_min = max(t_min, current_inputs['T_Mold'] - t_max_allow_change)
+                    t_max = min(t_max, current_inputs['T_Mold'] + t_max_allow_change)
             
             # -------------------------------------------------------------
 
@@ -476,7 +469,7 @@ with tab1:
             
         st.markdown("---")
 
-        # 변경 6: 진단 결과 조건부 표시
+        # 진단 결과 조건부 표시
         if st.session_state.get('diagnosis_executed'):
             last_risk = st.session_state['last_risk']
             
@@ -500,7 +493,7 @@ with tab1:
                 
                 # 결과 테이블 생성
                 results_df = pd.DataFrame({
-                    '현재 조건': [round(st.session_state['current_input_vars'][var], 1) for var in PROCESS_VARS], # 변경 7: 저장된 입력값 사용
+                    '현재 조건': [round(st.session_state['current_input_vars'][var], 1) for var in PROCESS_VARS],
                     '최적 조건': [opt_params[var] for var in PROCESS_VARS],
                     '단위': ['°C', 'mm/s', 'MPa', '°C', 'mm', 'mm']
                 }, index=PROCESS_VARS)
@@ -543,4 +536,4 @@ with tab2:
 with open(file_path, "w", encoding="utf-8") as f:
     f.write(code)
 
-print(f"File '{file_path}' has been created/updated with the modified Streamlit code.")
+print(f"File '{file_path}' has been successfully created/updated.")
