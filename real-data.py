@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-# (pickle, joblib은 사용하지 않으므로 임포트에서 제거)
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import roc_auc_score, accuracy_score
@@ -244,63 +243,68 @@ with tab1:
     col_mold, col_meter, col_vp = st.columns(3)
 
     # -------------------------------------------------------------
-    # 🌟 슬라이더 UI 생성 (value= 명시적 사용으로 오류 해결)
+    # 🌟 슬라이더 UI 생성 (모든 min/max/step을 float으로 통일)
     # -------------------------------------------------------------
     input_vars = {}
     
-    # 모든 슬라이더에서 value= 인수를 명시적으로 사용합니다. (오류 방지 핵심)
     with col_melt:
+        # 200 -> 200.0, 300 -> 300.0, 5 -> 5.0 (Float 통일)
         input_vars['T_Melt'] = st.slider(
             '용융 온도 (T_Melt)', 
-            200, 
-            300, 
-            value=st.session_state['input_T_Melt'], # value= 명시
-            step=5, 
+            200.0, 
+            300.0, 
+            value=st.session_state['input_T_Melt'], 
+            step=5.0, 
             key='slider_T_Melt'
         )
     with col_inj:
+        # 1 -> 1.0, 10 -> 10.0, 1 -> 1.0 (Float 통일)
         input_vars['V_Inj'] = st.slider(
             '사출 속도 (V_Inj)', 
-            1, 
-            10, 
-            value=st.session_state['input_V_Inj'], # value= 명시
-            step=1, 
+            1.0, 
+            10.0, 
+            value=st.session_state['input_V_Inj'], 
+            step=1.0, 
             key='slider_V_Inj'
         )
     with col_pack:
+        # 50 -> 50.0, 100 -> 100.0, 5 -> 5.0 (Float 통일)
         input_vars['P_Pack'] = st.slider(
             '보압 (P_Pack)', 
-            50, 
-            100, 
-            value=st.session_state['input_P_Pack'], # value= 명시
-            step=5, 
+            50.0, 
+            100.0, 
+            value=st.session_state['input_P_Pack'], 
+            step=5.0, 
             key='slider_P_Pack'
         )
     with col_mold:
+        # 30 -> 30.0, 80 -> 80.0, 5 -> 5.0 (Float 통일)
         input_vars['T_Mold'] = st.slider(
             '금형 온도 (T_Mold)', 
-            30, 
-            80, 
-            value=st.session_state['input_T_Mold'], # value= 명시
-            step=5, 
+            30.0, 
+            80.0, 
+            value=st.session_state['input_T_Mold'], 
+            step=5.0, 
             key='slider_T_Mold'
         )
     with col_meter:
+        # 180 -> 180.0, 200 -> 200.0, 1 -> 1.0 (Float 통일)
         input_vars['Meter'] = st.slider(
             '계량 위치 (Meter)', 
-            180, 
-            200, 
-            value=st.session_state['input_Meter'], # value= 명시
-            step=1, 
+            180.0, 
+            200.0, 
+            value=st.session_state['input_Meter'], 
+            step=1.0, 
             key='slider_Meter'
         )
     with col_vp:
+        # 10 -> 10.0, 20 -> 20.0, 1 -> 1.0 (Float 통일)
         input_vars['VP_Switch_Pos'] = st.slider(
             'VP 전환 위치', 
-            10, 
-            20, 
-            value=st.session_state['input_VP_Switch_Pos'], # value= 명시
-            step=1, 
+            10.0, 
+            20.0, 
+            value=st.session_state['input_VP_Switch_Pos'], 
+            step=1.0, 
             key='slider_VP_Switch_Pos'
         )
 
