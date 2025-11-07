@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
+import numpy as np요
 import pickle
 import joblib
 from sklearn.linear_model import LogisticRegression
@@ -254,13 +254,13 @@ with tab1:
     # 모든 슬라이더에서 value= 인수를 명시적으로 사용합니다. (오류 방지 핵심)
     with col_melt:
         input_vars['T_Melt'] = st.slider(
-            '용융 온도 (T_Melt)', 
-            200, 
-            300, 
-            value=st.session_state['input_T_Melt'], # value= 명시
-            step=5, 
-            key='slider_T_Melt'
-        )
+    '용융 온도 (T_Melt)',
+    min_value=230.0,
+    max_value=260.0,
+    value=240.0,
+    step=5.0,
+    key='slider_T_Melt'
+)
     with col_inj:
         input_vars['V_Inj'] = st.slider(
             '사출 속도 (V_Inj)', 
