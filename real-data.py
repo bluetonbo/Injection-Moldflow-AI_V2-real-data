@@ -70,8 +70,15 @@ if 'v_inj_qual_intent' not in st.session_state:
 if 't_mold_qual_intent' not in st.session_state:
     st.session_state['t_mold_qual_intent'] = 'Keep_Constant'
 
+# 🌟 정량적 노하우 입력 값 (퍼센트)
+if 'v_inj_quant_percent' not in st.session_state:
+    st.session_state['v_inj_quant_percent'] = 0.0
+if 't_mold_quant_percent' not in st.session_state:
+    st.session_state['t_mold_quant_percent'] = 0.0
+
+
 # -------------------------------------------------------------
-# 🌟 콜백 함수: 전문가 확신 수준 변경 시 영향 계수 업데이트 (st.rerun 제거, 세션 상태 업데이트에 집중)
+# 🌟 콜백 함수: 전문가 확신 수준 변경 시 영향 계수 업데이트
 # -------------------------------------------------------------
 def update_influence_factor():
     """전문가 확신 수준 슬라이더 변경 시 영향 계수를 업데이트하고 진단 결과를 초기화합니다."""
@@ -92,12 +99,13 @@ def update_influence_factor():
     st.session_state['current_risk_display'] = None 
     st.session_state['optimization_result'] = None 
 
-# -------------------------------------------------------------
-
 
 # =================================================================
-# 1. 데이터 로드 및 전처리 함수
+# 1. 데이터 로드 및 전처리 함수 (생략, 이전과 동일)
 # =================================================================
+
+# ... (load_df_from_uploader, process_weld_data 함수는 생략됨, 이전 코드와 동일)
+# ... (train_model, predict_weld_risk 함수는 생략됨, 이전 코드와 동일)
 
 @st.cache_data(show_spinner=False)
 def load_df_from_uploader(uploaded_file):
@@ -141,9 +149,6 @@ def process_weld_data(df_virtual, df_real):
     
     return df_processed
 
-# =================================================================
-# 2. 모델 학습 함수
-# =================================================================
 def train_model(df):
     """데이터를 사용하여 로지스틱 회귀 모델을 학습하고 스케일러를 저장합니다."""
     if df.empty:
@@ -160,9 +165,6 @@ def train_model(df):
     
     return model, scaler
 
-# =================================================================
-# 3. 예측 및 최적화 함수
-# =================================================================
 def predict_weld_risk(model, scaler, input_data):
     """입력 데이터에 대한 불량 확률을 예측합니다."""
     if model is None or scaler is None:
@@ -286,6 +288,7 @@ with tab1:
         ['°C', 'mm/s', 'MPa', '°C', 'mm', 'mm']
     ):
         with col:
+            # 🌟 슬라이더의 on_change는 결과를 초기화하여 재실행을 유도
             input_vars[var] = st.slider(
                 f'{label} ({var}) [{unit}]', 
                 min_val, 
@@ -357,18 +360,20 @@ with tab1:
         st.session_state['v_inj_quant_apply'] = v_inj_quant_apply
         
     with col_v_delta:
-        st.write('V_Inj 노하우 변화량 ($\Delta V_{Inj}, mm/s$)')
-        v_inj_delta = st.slider(
-            'V_Inj 변화폭', 
+        # 🌟 정량적 노하우 입력 값 변경 (0~100% 범위)
+        st.write('V_Inj 노하우 변화율 (%)')
+        v_inj_quant_percent = st.slider(
+            'V_Inj 변화율', 
             0.0, 
-            5.0, 
-            value=0.0, 
-            step=0.5,
+            100.0, 
+            value=st.session_state['v_inj_quant_percent'], 
+            step=1.0,
             label_visibility="collapsed",
             disabled=not v_inj_quant_apply,
-            key='delta_v_inj_slider',
+            key='v_inj_quant_percent_slider',
             on_change=lambda: st.session_state.update({'optimization_result': None})
         )
+        st.session_state['v_inj_quant_percent'] = v_inj_quant_percent
     
     # -------------------------------------------------------------
     # 3. 금형 온도 (extT_Mold)
@@ -407,18 +412,21 @@ with tab1:
         st.session_state['t_mold_quant_apply'] = t_mold_quant_apply
         
     with col_t_delta:
-        st.write('T_Mold 노하우 변화량 ($\Delta T_{Mold}, °C$)')
-        t_mold_delta = st.slider(
-            'T_Mold 변화폭', 
+        # 🌟 정량적 노하우 입력 값 변경 (0~100% 범위)
+        st.write('T_Mold 노하우 변화율 (%)')
+        t_mold_quant_percent = st.slider(
+            'T_Mold 변화율', 
             0.0, 
-            5.0, 
-            value=0.0, 
-            step=0.5,
+            100.0, 
+            value=st.session_state['t_mold_quant_percent'], 
+            step=1.0,
             label_visibility="collapsed",
             disabled=not t_mold_quant_apply,
-            key='delta_t_mold_slider',
+            key='t_mold_quant_percent_slider',
             on_change=lambda: st.session_state.update({'optimization_result': None})
         )
+        st.session_state['t_mold_quant_percent'] = t_mold_quant_percent
+
 
     st.markdown("---")
 
@@ -427,18 +435,16 @@ with tab1:
     # -----------------
     st.header("C. 진단 실행 및 결과")
 
-    # 🌟 노하우 영향 계수 (세션 상태 값 참조) - KEY 제거 및 VALUE에만 집중 (최종 해결)
+    # 🌟 노하우 영향 계수 (세션 상태 값 참조)
     st.write("노하우 영향 계수")
     st.slider(
         '노하우 영향 계수 (0.0~1.0)', 
         0.0, 
         1.0, 
-        # 🌟 콜백 함수에 의해 업데이트되는 세션 상태 값을 직접 참조하여 표시
         value=st.session_state['influence_factor_display_val'], 
         step=0.01, 
         label_visibility="collapsed",
         disabled=True
-        # ⚠️ key='influence_factor_display' 를 제거하여 Streamlit의 내부 상태 관리 간소화
     )
     
     st.markdown("---")
@@ -459,7 +465,7 @@ with tab1:
         st.session_state['optimization_result'] = None 
 
     
-    def run_optimization_callback(input_vars, v_inj_intent, v_inj_delta, v_inj_quant_apply, t_mold_intent, t_mold_delta, t_mold_quant_apply):
+    def run_optimization_callback(input_vars, v_inj_intent, v_inj_quant_percent, v_inj_quant_apply, t_mold_intent, t_mold_quant_percent, t_mold_quant_apply):
         """최적 공정 조건 제시 버튼 클릭 시 실행"""
         model = st.session_state['model']
         scaler = st.session_state['scaler']
@@ -485,35 +491,48 @@ with tab1:
             constraints.append({'type': 'eq', 
                                  'fun': lambda X, idx=idx, val=X0[idx]: X[idx] - val})
 
-        # V_Inj 노하우 제약 (Bounds 설정)
+        # =========================================================
+        # V_Inj 노하우 제약 (Bounds 설정) - 퍼센트 반영
+        # =========================================================
         v_min_global, v_max_global = 1.0, 10.0
         v_min_opt, v_max_opt = v_min_global, v_max_global
         
-        # 노하우 적용 조건 (정량적 적용 또는 정성적 적용 + Keep_Constant가 아닌 경우)
+        current_v_inj = input_vars['V_Inj']
+        
         if v_inj_quant_apply or (v_inj_qual_apply and v_inj_intent != 'Keep_Constant'):
-            delta = v_inj_delta * influence_factor 
+            # 🌟 현재 값에 대한 퍼센트 변화량 계산
+            delta_v_inj = current_v_inj * (v_inj_quant_percent / 100.0) 
+            final_delta = delta_v_inj * influence_factor 
+            
             if v_inj_intent == 'Increase':
-                v_min_opt = max(v_min_global, input_vars['V_Inj'] + delta)
+                v_min_opt = max(v_min_global, current_v_inj + final_delta)
             elif v_inj_intent == 'Decrease':
-                v_max_opt = min(v_max_global, input_vars['V_Inj'] - delta)
+                v_max_opt = min(v_max_global, current_v_inj - final_delta)
         elif v_inj_qual_apply and v_inj_intent == 'Keep_Constant':
-             v_min_opt = input_vars['V_Inj']
-             v_max_opt = input_vars['V_Inj']
+             v_min_opt = current_v_inj
+             v_max_opt = current_v_inj
 
 
-        # T_Mold 노하우 제약 (Bounds 설정)
+        # =========================================================
+        # T_Mold 노하우 제약 (Bounds 설정) - 퍼센트 반영
+        # =========================================================
         t_min_global, t_max_global = 30.0, 80.0
         t_min_opt, t_max_opt = t_min_global, t_max_global
         
+        current_t_mold = input_vars['T_Mold']
+        
         if t_mold_quant_apply or (t_mold_qual_apply and t_mold_intent != 'Keep_Constant'):
-            delta = t_mold_delta * influence_factor
+            # 🌟 현재 값에 대한 퍼센트 변화량 계산
+            delta_t_mold = current_t_mold * (t_mold_quant_percent / 100.0)
+            final_delta = delta_t_mold * influence_factor
+            
             if t_mold_intent == 'Increase':
-                t_min_opt = max(t_min_global, input_vars['T_Mold'] + delta)
+                t_min_opt = max(t_min_global, current_t_mold + final_delta)
             elif t_mold_intent == 'Decrease':
-                t_max_opt = min(t_max_global, input_vars['T_Mold'] - delta)
+                t_max_opt = min(t_max_global, current_t_mold - final_delta)
         elif t_mold_qual_apply and t_mold_intent == 'Keep_Constant':
-             t_min_opt = input_vars['T_Mold']
-             t_max_opt = input_vars['T_Mold']
+             t_min_opt = current_t_mold
+             t_max_opt = current_t_mold
 
         # 변수별 경계 설정 (Bounds)
         bounds = [
@@ -557,8 +576,8 @@ with tab1:
         st.button("✨ 최적 공정 조건 제시", 
                   on_click=run_optimization_callback, 
                   args=(input_vars, 
-                        v_inj_intent, v_inj_delta, v_inj_quant_apply,
-                        t_mold_intent, t_mold_delta, t_mold_quant_apply), 
+                        v_inj_intent, st.session_state['v_inj_quant_percent'], v_inj_quant_apply,
+                        t_mold_intent, st.session_state['t_mold_quant_percent'], t_mold_quant_apply), 
                   use_container_width=True)
 
     st.markdown("---")
@@ -601,9 +620,11 @@ with tab1:
             
             summary_data = {}
             for var in PROCESS_VARS:
-                if round(input_vars[var], 1) != opt_params[var]:
-                    change = "↑ 상향" if opt_params[var] > round(input_vars[var], 1) else "↓ 하향"
-                    summary_data[var] = f"{opt_params[var]} ({change})"
+                current_val = round(input_vars[var], 1)
+                opt_val = opt_params[var]
+                if current_val != opt_val:
+                    change = "↑ 상향" if opt_val > current_val else "↓ 하향"
+                    summary_data[var] = f"{opt_val} ({change})"
             
             if summary_data:
                 summary_df = pd.DataFrame(summary_data.values(), index=summary_data.keys(), columns=['변화된 조건'])
