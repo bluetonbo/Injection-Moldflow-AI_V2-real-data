@@ -71,16 +71,21 @@ if 't_mold_qual_intent' not in st.session_state:
     st.session_state['t_mold_qual_intent'] = 'Keep_Constant'
 
 # -------------------------------------------------------------
-# 🌟 콜백 함수: 전문가 확신 수준 변경 시 영향 계수 업데이트 (핵심 수정)
+# 🌟 콜백 함수: 전문가 확신 수준 변경 시 영향 계수 업데이트 (수정된 로직)
 # -------------------------------------------------------------
 def update_influence_factor():
     """전문가 확신 수준 슬라이더 변경 시 영향 계수와 진단 결과를 업데이트"""
     
-    # 🌟 'expert_confidence_slider'의 현재 값(0~100)을 가져옴
-    new_confidence_level = st.session_state['expert_confidence_slider']
+    # 🌟 슬라이더 키의 값을 직접 가져와서 사용
+    if 'expert_confidence_slider' in st.session_state:
+        new_confidence_level = st.session_state['expert_confidence_slider']
+    else:
+        # 키가 아직 생성되지 않은 경우 (초기 로드), 기본값 사용
+        new_confidence_level = st.session_state['conf_level'] 
+        
     new_influence_factor = new_confidence_level / 100.0
     
-    # 🌟 세션 상태에 저장된 'conf_level'과 'influence_factor_display_val'을 즉시 업데이트
+    # 🌟 세션 상태 값 업데이트
     st.session_state['conf_level'] = new_confidence_level
     st.session_state['influence_factor_display_val'] = new_influence_factor
     
@@ -301,6 +306,7 @@ with tab1:
     # 1. 전문가 확신 수준 (반영도)
     st.subheader("1. 전문가 확신 수준")
     st.write("전문가 확신 수준") 
+    # 🌟 expert_confidence_slider 값 변경 시 update_influence_factor 콜백 실행
     expert_confidence = st.slider(
         '노하우 반영도 (%)', 
         0.0, 
@@ -309,7 +315,6 @@ with tab1:
         step=5.0, 
         label_visibility="collapsed",
         key='expert_confidence_slider',
-        # 🌟 값이 변경될 때마다 영향 계수 세션 상태를 업데이트
         on_change=update_influence_factor 
     )
     # st.session_state['conf_level'] 값은 콜백 내에서 업데이트됨
