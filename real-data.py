@@ -45,9 +45,7 @@ if 'current_risk_display' not in st.session_state:
 if 'optimization_result' not in st.session_state:
     st.session_state['optimization_result'] = None
 
-# -------------------------------------------------------------
 # 슬라이더 오류 방지 로직: 초기값을 무조건 float으로 설정
-# -------------------------------------------------------------
 for var, default_val in DEFAULT_INPUT_VALS.items():
     if f'input_{var}' not in st.session_state:
         st.session_state[f'input_{var}'] = float(default_val)
@@ -55,6 +53,10 @@ for var, default_val in DEFAULT_INPUT_VALS.items():
 # UI 상태를 위한 세션 상태 추가
 if 'conf_level' not in st.session_state:
     st.session_state['conf_level'] = 75.0
+# 🌟 노하우 영향 계수 세션 상태 추가 (초기값 0.75)
+if 'influence_factor_display_val' not in st.session_state:
+    st.session_state['influence_factor_display_val'] = st.session_state['conf_level'] / 100.0
+
 if 'v_inj_qual_apply' not in st.session_state:
     st.session_state['v_inj_qual_apply'] = False
 if 'v_inj_quant_apply' not in st.session_state:
@@ -67,11 +69,24 @@ if 'v_inj_qual_intent' not in st.session_state:
     st.session_state['v_inj_qual_intent'] = 'Keep_Constant'
 if 't_mold_qual_intent' not in st.session_state:
     st.session_state['t_mold_qual_intent'] = 'Keep_Constant'
+
+# -------------------------------------------------------------
+# 🌟 콜백 함수: 전문가 확신 수준 변경 시 영향 계수 업데이트
+# -------------------------------------------------------------
+def update_influence_factor():
+    """전문가 확신 수준 슬라이더 변경 시 노하우 영향 계수 세션 상태를 업데이트"""
+    # 'expert_confidence_slider' 키의 현재 값을 가져와서 100으로 나눔
+    new_confidence_level = st.session_state['expert_confidence_slider']
+    new_influence_factor = new_confidence_level / 100.0
+    st.session_state['influence_factor_display_val'] = new_influence_factor
+    # 최적화 결과 초기화 (값이 바뀌었으므로)
+    st.session_state['optimization_result'] = None 
 # -------------------------------------------------------------
 
 
 # =================================================================
 # 1. 데이터 로드 및 전처리 함수
+# (이전과 동일하므로 생략)
 # =================================================================
 
 @st.cache_data(show_spinner=False)
@@ -118,8 +133,8 @@ def process_weld_data(df_virtual, df_real):
 
 # =================================================================
 # 2. 모델 학습 함수
+# (이전과 동일하므로 생략)
 # =================================================================
-
 def train_model(df):
     """데이터를 사용하여 로지스틱 회귀 모델을 학습하고 스케일러를 저장합니다."""
     if df.empty:
@@ -138,8 +153,8 @@ def train_model(df):
 
 # =================================================================
 # 3. 예측 및 최적화 함수
+# (이전과 동일하므로 생략)
 # =================================================================
-
 def predict_weld_risk(model, scaler, input_data):
     """입력 데이터에 대한 불량 확률을 예측합니다."""
     if model is None or scaler is None:
@@ -159,6 +174,7 @@ def predict_weld_risk(model, scaler, input_data):
     prediction_proba = model.predict_proba(input_scaled)[:, 1][0]
     
     return prediction_proba
+
 
 # =================================================================
 # 4. Streamlit UI 및 로직
@@ -281,7 +297,7 @@ with tab1:
 
     # 1. 전문가 확신 수준 (반영도)
     st.subheader("1. 전문가 확신 수준")
-    st.write("전문가 확신 수준") # 이미지 폰트/형식 맞춤
+    st.write("전문가 확신 수준") 
     expert_confidence = st.slider(
         '노하우 반영도 (%)', 
         0.0, 
@@ -289,7 +305,9 @@ with tab1:
         value=st.session_state['conf_level'], 
         step=5.0, 
         label_visibility="collapsed",
-        key='expert_confidence_slider'
+        key='expert_confidence_slider',
+        # 🌟 값이 변경될 때마다 영향 계수 세션 상태를 업데이트
+        on_change=update_influence_factor 
     )
     st.session_state['conf_level'] = expert_confidence
     st.markdown('<div style="margin-top: -20px; font-size: 12px; color: grey;">(0%는 노하우 미반영, 100%는 노하우를 제약 조건으로 강력히 적용)</div>', unsafe_allow_html=True)
@@ -336,7 +354,7 @@ with tab1:
             'V_Inj 변화폭', 
             0.0, 
             5.0, 
-            value=0.0, # 슬라이더의 기본값은 0
+            value=0.0, 
             step=0.5,
             label_visibility="collapsed",
             disabled=not v_inj_quant_apply,
@@ -397,27 +415,23 @@ with tab1:
     st.markdown("---")
 
     # -----------------
-    # C. 진단 실행 및 결과 (이미지 형식 반영)
+    # C. 진단 실행 및 결과
     # -----------------
     st.header("C. 진단 실행 및 결과")
 
-    # 노하우 영향 계수 (노하우 확신 수준과 동일한 범위의 슬라이더를 하나 더 추가)
+    # 🌟 노하우 영향 계수 (세션 상태 값 참조)
     st.write("노하우 영향 계수")
-    # 전문가 확신 수준을 0~100으로 받았다면, 여기서 0.0~1.0으로 스케일링하여 사용자에게 보여줌
-    # 실제 노하우 반영 계수로 사용될 값 (예: 75 -> 0.75)
-    influence_factor_display = expert_confidence / 100.0
-    
     st.slider(
         '노하우 영향 계수 (0.0~1.0)', 
         0.0, 
         1.0, 
-        value=influence_factor_display, 
+        # 🌟 세션 상태 값 참조 및 업데이트된 값을 사용
+        value=st.session_state['influence_factor_display_val'], 
         step=0.01, 
         label_visibility="collapsed",
-        disabled=True, # 전문가 확신 수준과 연동되므로 비활성화
+        disabled=True, 
         key='influence_factor_display'
     )
-    # 실제 최적화에 사용될 계수는 influence_factor_display를 사용해야 함.
     
     st.markdown("---")
 
@@ -434,10 +448,10 @@ with tab1:
 
         current_risk = predict_weld_risk(st.session_state['model'], st.session_state['scaler'], input_vars)
         st.session_state['current_risk_display'] = current_risk
-        st.session_state['optimization_result'] = None # 진단 실행 시 최적화 결과 초기화
+        st.session_state['optimization_result'] = None 
 
     
-    def run_optimization_callback(input_vars, v_inj_intent, v_inj_delta, v_inj_quant_apply, t_mold_intent, t_mold_delta, t_mold_quant_apply, expert_confidence):
+    def run_optimization_callback(input_vars, v_inj_intent, v_inj_delta, v_inj_quant_apply, t_mold_intent, t_mold_delta, t_mold_quant_apply):
         """최적 공정 조건 제시 버튼 클릭 시 실행"""
         model = st.session_state['model']
         scaler = st.session_state['scaler']
@@ -446,74 +460,60 @@ with tab1:
             st.session_state['optimization_result'] = {"success": False, "message": "모델이 학습되지 않았습니다."}
             return
 
-        # 최적화 목표 함수 (불량 확률 최소화)
         def objective_function(X_array):
             X_df = pd.DataFrame([X_array], columns=PROCESS_VARS)
             return predict_weld_risk(model, scaler, X_df.iloc[0].to_dict())
 
         X0 = np.array([input_vars[var] for var in PROCESS_VARS], dtype=float)
         
-        # 노하우 반영 계수 (confidence_level / 100)
-        influence_factor = expert_confidence / 100.0
+        # 🌟 최적화에 사용될 노하우 반영 계수는 세션 상태에서 가져옴
+        influence_factor = st.session_state['influence_factor_display_val'] 
 
         constraints = []
         
-        # T_Melt, P_Pack, Meter, VP_Switch_Pos는 현재 값으로 고정 (Equal Constraint)
         fixed_vars = ['T_Melt', 'P_Pack', 'Meter', 'VP_Switch_Pos']
         for var in fixed_vars:
             idx = PROCESS_VARS.index(var)
             constraints.append({'type': 'eq', 
                                  'fun': lambda X, idx=idx, val=X0[idx]: X[idx] - val})
 
-        # ------------------------------------------------------------------------
         # V_Inj 노하우 제약 (Bounds 설정)
-        # ------------------------------------------------------------------------
         v_min_global, v_max_global = 1.0, 10.0
         v_min_opt, v_max_opt = v_min_global, v_max_global
         
-        if v_inj_quant_apply:
-            delta = v_inj_delta * influence_factor # 노하우 변화량 * 반영도
+        if v_inj_quant_apply or (v_inj_qual_apply and v_inj_intent != 'Keep_Constant'):
+            delta = v_inj_delta * influence_factor 
             if v_inj_intent == 'Increase':
                 v_min_opt = max(v_min_global, input_vars['V_Inj'] + delta)
             elif v_inj_intent == 'Decrease':
                 v_max_opt = min(v_max_global, input_vars['V_Inj'] - delta)
-            elif v_inj_intent == 'Keep_Constant':
-                # 정량적 노하우가 적용된 경우, Keep_Constant는 해당 값으로 고정
-                v_min_opt = input_vars['V_Inj']
-                v_max_opt = input_vars['V_Inj']
-        # 정량적 노하우가 적용되지 않았고 정성적 노하우가 Keep_Constant인 경우 고정
-        elif v_inj_intent == 'Keep_Constant' and v_inj_qual_apply:
+        elif v_inj_qual_apply and v_inj_intent == 'Keep_Constant':
              v_min_opt = input_vars['V_Inj']
              v_max_opt = input_vars['V_Inj']
 
 
-        # ------------------------------------------------------------------------
         # T_Mold 노하우 제약 (Bounds 설정)
-        # ------------------------------------------------------------------------
         t_min_global, t_max_global = 30.0, 80.0
         t_min_opt, t_max_opt = t_min_global, t_max_global
         
-        if t_mold_quant_apply:
-            delta = t_mold_delta * influence_factor # 노하우 변화량 * 반영도
+        if t_mold_quant_apply or (t_mold_qual_apply and t_mold_intent != 'Keep_Constant'):
+            delta = t_mold_delta * influence_factor
             if t_mold_intent == 'Increase':
                 t_min_opt = max(t_min_global, input_vars['T_Mold'] + delta)
             elif t_mold_intent == 'Decrease':
                 t_max_opt = min(t_max_global, input_vars['T_Mold'] - delta)
-            elif t_mold_intent == 'Keep_Constant':
-                t_min_opt = input_vars['T_Mold']
-                t_max_opt = input_vars['T_Mold']
-        elif t_mold_intent == 'Keep_Constant' and t_mold_qual_apply:
+        elif t_mold_qual_apply and t_mold_intent == 'Keep_Constant':
              t_min_opt = input_vars['T_Mold']
              t_max_opt = input_vars['T_Mold']
 
-        # 변수별 경계 설정 (Bounds) - 순서 중요!
+        # 변수별 경계 설정 (Bounds)
         bounds = [
-            (200.0, 300.0),      # T_Melt (idx 0)
-            (v_min_opt, v_max_opt), # V_Inj (idx 1) - 노하우 반영
-            (50.0, 100.0),      # P_Pack (idx 2)
-            (t_min_opt, t_max_opt), # T_Mold (idx 3) - 노하우 반영
-            (180.0, 200.0),     # Meter (idx 4)
-            (10.0, 20.0)        # VP_Switch_Pos (idx 5)
+            (200.0, 300.0),      
+            (v_min_opt, v_max_opt), 
+            (50.0, 100.0),      
+            (t_min_opt, t_max_opt), 
+            (180.0, 200.0),     
+            (10.0, 20.0)        
         ]
 
         try:
@@ -527,7 +527,7 @@ with tab1:
                     "success": True,
                     "opt_params": opt_params,
                     "opt_risk": opt_risk,
-                    "influence_factor": influence_factor # 최적화에 사용된 계수 저장
+                    "influence_factor": influence_factor
                 }
             else:
                 st.session_state['optimization_result'] = {"success": False, "message": f"최적화 실패: {result.message}"}
@@ -549,8 +549,7 @@ with tab1:
                   on_click=run_optimization_callback, 
                   args=(input_vars, 
                         v_inj_intent, v_inj_delta, v_inj_quant_apply,
-                        t_mold_intent, t_mold_delta, t_mold_quant_apply,
-                        expert_confidence), 
+                        t_mold_intent, t_mold_delta, t_mold_quant_apply), 
                   use_container_width=True)
 
     st.markdown("---")
@@ -591,7 +590,6 @@ with tab1:
             
             st.markdown("##### 🔍 최적화 요약")
             
-            # 최적화 결과와 현재 조건 비교
             summary_data = {}
             for var in PROCESS_VARS:
                 if round(input_vars[var], 1) != opt_params[var]:
