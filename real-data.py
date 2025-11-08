@@ -71,30 +71,27 @@ if 't_mold_qual_intent' not in st.session_state:
     st.session_state['t_mold_qual_intent'] = 'Keep_Constant'
 
 # -------------------------------------------------------------
-# 🌟 콜백 함수: 전문가 확신 수준 변경 시 영향 계수 업데이트 (st.rerun 추가)
+# 🌟 콜백 함수: 전문가 확신 수준 변경 시 영향 계수 업데이트 (st.rerun 제거, 세션 상태 업데이트에 집중)
 # -------------------------------------------------------------
 def update_influence_factor():
-    """전문가 확신 수준 슬라이더 변경 시 영향 계수를 업데이트하고 앱을 다시 실행하여 즉시 반영"""
+    """전문가 확신 수준 슬라이더 변경 시 영향 계수를 업데이트하고 진단 결과를 초기화합니다."""
     
-    # 🌟 슬라이더 키의 값을 직접 가져와서 사용
+    # 🌟 슬라이더 키의 값을 직접 가져와서 사용 (가장 최신 값)
     if 'expert_confidence_slider' in st.session_state:
         new_confidence_level = st.session_state['expert_confidence_slider']
     else:
-        # 키가 아직 생성되지 않은 경우 (초기 로드), 기본값 사용
         new_confidence_level = st.session_state['conf_level'] 
         
     new_influence_factor = new_confidence_level / 100.0
     
-    # 🌟 세션 상태 값 업데이트
+    # 🌟 'conf_level'과 'influence_factor_display_val' 세션 상태를 업데이트
     st.session_state['conf_level'] = new_confidence_level
     st.session_state['influence_factor_display_val'] = new_influence_factor
     
     # 노하우가 변경되었으므로 진단 및 최적화 결과 초기화
     st.session_state['current_risk_display'] = None 
     st.session_state['optimization_result'] = None 
-    
-    # 🌟 앱을 다시 실행하여 변경된 세션 상태를 UI에 즉시 반영
-    st.rerun() 
+
 # -------------------------------------------------------------
 
 
@@ -430,18 +427,18 @@ with tab1:
     # -----------------
     st.header("C. 진단 실행 및 결과")
 
-    # 🌟 노하우 영향 계수 (세션 상태 값 참조)
+    # 🌟 노하우 영향 계수 (세션 상태 값 참조) - KEY 제거 및 VALUE에만 집중 (최종 해결)
     st.write("노하우 영향 계수")
-    # 🌟 value를 세션 상태의 influence_factor_display_val로 설정
     st.slider(
         '노하우 영향 계수 (0.0~1.0)', 
         0.0, 
         1.0, 
+        # 🌟 콜백 함수에 의해 업데이트되는 세션 상태 값을 직접 참조하여 표시
         value=st.session_state['influence_factor_display_val'], 
         step=0.01, 
         label_visibility="collapsed",
-        disabled=True, 
-        key='influence_factor_display'
+        disabled=True
+        # ⚠️ key='influence_factor_display' 를 제거하여 Streamlit의 내부 상태 관리 간소화
     )
     
     st.markdown("---")
